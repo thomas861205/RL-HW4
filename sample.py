@@ -1,5 +1,6 @@
 import gym
 import numpy as np
+import matplotlib.pyplot as plt
 from agent import Tabular_Q_learning, Policy_gradient, Actor_critics
 
 episodes = 10000
@@ -18,11 +19,16 @@ for episode in range(episodes):
 
 	    if done:
 	    	reward_hist[episode] = step
-	    	print('Score: {}'.format(step))
 	    	break
+	if episode % 10 == 0:
+		print('Episode {}/{} Score: {}'.format(episode, episodes, step))
 	env.close()
 
 print('avg. {}'.format(np.mean(reward_hist)))
+print('last 100 {}'.format(np.mean(reward_hist[-100:])))
 print('peak {}'.format(np.max(reward_hist)))
+
+plt.plot(reward_hist)
+plt.show()
 
 
