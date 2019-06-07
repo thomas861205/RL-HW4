@@ -2,9 +2,10 @@ import gym
 import numpy as np
 from agent import Tabular_Q_learning, Policy_gradient, Actor_critics
 
-episodes = 3000
-env = gym.make('CartPole-v1')
+episodes = 10000
+reward_hist = np.zeros((episodes))
 
+env = gym.make('CartPole-v1')
 agent = Tabular_Q_learning(env)
 for episode in range(episodes):
 	state = env.reset()
@@ -16,8 +17,12 @@ for episode in range(episodes):
 	    state = state_next
 
 	    if done:
+	    	reward_hist[episode] = step
 	    	print('Score: {}'.format(step))
 	    	break
 	env.close()
+
+print('avg. {}'.format(np.mean(reward_hist)))
+print('peak {}'.format(np.max(reward_hist)))
 
 

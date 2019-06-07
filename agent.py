@@ -10,10 +10,10 @@ class Tabular_Q_learning():
 		self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
 
 	def state_coding(self, state):
-		cart_pos_bin = np.linspace(-4.8, 4.8, num=4)
-		cart_vel_bin = np.linspace(-1.0, 1.0, num=200)
+		cart_pos_bin = np.linspace(-4.8, 4.8, num=20)
+		cart_vel_bin = np.linspace(-2, 2, num=200)
 		pole_ang_bin = np.linspace(-24.0, 24.0, num=20)
-		pole_vel_bin = np.linspace(-1.5, 1.5, num=200)
+		pole_vel_bin = np.linspace(-2, 2, num=200)
 
 		cart_pos = np.digitize(state[0], cart_pos_bin)
 		cart_vel = np.digitize(state[1], cart_vel_bin)
