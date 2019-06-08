@@ -8,22 +8,22 @@ from collections import defaultdict
 #     1	Cart Velocity             -Inf            Inf
 #     2	Pole Angle    -24 deg = -0.42 radian  24 deg = -0.42 radian -> terminate when |pole angle| > 12deg
 #     3	Pole Velocity At Tip      -Inf            Inf
-
+# or reach timestep 500
 
 class Tabular_Q_learning():
 	def __init__(self, env):
 		self.env = env
-		self.alpha = 0.05
-		self.gamma = 0.95
+		self.alpha = 0.1
+		self.gamma = 1
 		self.epsilon = 0.5
 		self.epsilon_decay = 0.99
 		self.epsilon_min = 0.0
 
 
-		self.cart_pos_bin = np.linspace(-2.4, 2.4, num=8)[1:-1]
-		self.cart_vel_bin = np.linspace(-3, 3, num=8)[1:-1]
-		self.pole_ang_bin = np.linspace(-0.42, 0.42, num=8)[1:-1]
-		self.pole_vel_bin = np.linspace(-2.0, 2.0, num=8)[1:-1]
+		self.cart_pos_bin = np.linspace(-2.4, 2.4, num=6)[1:-1]
+		self.cart_vel_bin = np.linspace(-3, 3, num=4)[1:-1]
+		self.pole_ang_bin = np.linspace(-0.21, 0.21, num=8)[1:-1]
+		self.pole_vel_bin = np.linspace(-2.0, 2.0, num=6)[1:-1]
 		self.Q = defaultdict(lambda: np.zeros(env.action_space.n))
 
 	def state_coding(self, state):

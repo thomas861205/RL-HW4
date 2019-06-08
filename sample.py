@@ -21,14 +21,14 @@ for episode in range(episodes):
 	agent.epsilon *= agent.epsilon_decay
 	for step in range(500):
 	    if render:
-	    	env.render()
+	    	# env.render()
 	    	# print(state)
 	    	# print(agent.state_coding(state))
 	    	pass
 	    action = agent.act(state)
 	    state_next, reward, done, info = env.step(action) # take a random action
 	    if done and step < 499:
-	    	reward = -5000
+	    	reward = -1e5
 	    agent.update_Q(state, action, reward, state_next, done)
 	    state = state_next
 
