@@ -64,64 +64,87 @@ class Tabular_Q_learning():
 class Policy_gradient():
 	def __init__(self, env):
 		self.env = env
-		self.num_actions = env.action_space.n
-		self.hidden_layer_neurons = 8
-		self.gamma = .99
+		self.n_actions = env.action_space.n
+		self.n_hidden = 8
+		self.gamma = 0.95
 		self.dimen = len(env.reset())
-		self.print_every = 100
-		self.batch_size = 50
-		self.num_episodes = 10000
-		self.render = False
 		self.lr = 1e-2
-		self.goal = 190
 		self.build_model()
+		self.states = np.empty(0).reshape(0,self.dimen)
+		self.actions = np.empty(0).reshape(0,1)
+		self.rewards = np.empty(0).reshape(0,1)
+		self.discounted_rewards = np.empty(0).reshape(0,1)
 		# print(self.model_predict.summary())
 
 
 	def build_model(self):
 	    x = layers.Input(shape=self.env.reset().shape, name="x")
-	    self.adv = layers.Input(shape=[1], name="advantages")
-	    h1 = layers.Dense(self.hidden_layer_neurons, 
+	    adv = layers.Input(shape=[1], name="advantages")
+	    h1 = layers.Dense(self.n_hidden, 
 	                     activation="relu", 
 	                     use_bias=False,
-	                     kernel_initializer=glorot_uniform(seed=42),
+	                     kernel_initializer=glorot_uniform(),
 	                     name="hidden_1")(x)
 	    out = layers.Dense(self.env.action_space.n, 
 	                       activation="softmax", 
-	                       kernel_initializer=glorot_uniform(seed=42),
+	                       kernel_initializer=glorot_uniform(),
 	                       use_bias=False,
 	                       name="out")(h1)
 
+	    def _loss(y_true, y_pred):
+	        log_lik = K.log(y_true * (y_true - y_pred) + (1 - y_true) * (y_true + y_pred))
+	        return K.mean(log_lik * adv, keepdims=True)
 
-	    self.model_train = Model(inputs=[x, self.adv], outputs=out)
-	    self.model_train.compile(loss=self.custom_loss, optimizer=Adam(self.lr))
+	    self.model_train = Model(inputs=[x, adv], outputs=out)
+	    self.model_train.compile(loss=_loss, optimizer=Adam(self.lr))
 	    self.model_predict = Model(inputs=[x], outputs=out)
 
 
-	def custom_loss(self, y_true, y_pred):
-	    log_lik = K.log(y_true * (y_true - y_pred) + (1 - y_true) * (y_true + y_pred))
-	    return K.mean(log_lik * self.adv, keepdims=True)
 
 
-	def discount_rewards(self, r, gamma=0.99):
-	    prior = 0
-	    out = []
-	    for val in r:
-	        new_val = val + prior * gamma
-	        out.append(new_val)
-	        prior = new_val
-	    return np.array(list(reversed(out)))
+	def discount_rewards(self, rewards):
+	    prev = 0
+	    ret = []
+	    for reward in rewards:
+	        curr = reward + self.gamma * prev
+	        ret.append(curr)
+	        prev = curr
+	    return np.array(list(reversed(ret)))
 
 
-	def score_model(self, model, num_tests, render=False):
+	def act(self, observation):
+	    state = np.reshape(observation, [1, self.dimen])
+	    
+	    predict = self.model_predict.predict([state])[0]
+	    action = np.random.choice(range(self.n_actions),p=predict)
+	    self.states = np.vstack([self.states, state])
+	    self.actions = np.vstack([self.actions, action])
+
+	    return action
+
+
+	def train(self, states, actions, discounted_rewards):
+	    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
+	    discounted_rewards = discounted_rewards.squeeze()
+	    actions = actions.squeeze().astype(int)
+	   
+	    actions_train = np.zeros([len(actions), self.n_actions])
+	    actions_train[np.arange(len(actions)), actions] = 1
+	    
+	    loss = self.model_train.train_on_batch([states, discounted_rewards], actions_train)
+
+	    states = np.empty(0).reshape(0,self.dimen)
+	    actions = np.empty(0).reshape(0,1)
+	    discounted_rewards = np.empty(0).reshape(0,1)
+	    return loss
+
+
+	def test(self, model, num_tests):
 	    scores = []    
 	    for num_test in range(num_tests):
 	        observation = self.env.reset()
 	        reward_sum = 0
 	        while True:
-	            if render:
-	                self.env.render()
-
 	            state = np.reshape(observation, [1, self.dimen])
 	            predict = model.predict([state])[0]
 	            action = np.argmax(predict)
@@ -139,8 +162,4 @@ class Actor_critics():
 		pass
 
 if __name__ == '__main__':
-	import gym
-
-	env = gym.make('CartPole-v1')
-	agent = Policy_gradient(env)
-	agent.run()
+	pass

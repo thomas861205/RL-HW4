@@ -53,68 +53,44 @@ def agent_pg():
 	episodes = 1000
 	batch_size = 50
 	episode = 0
-	steps = 0
 	losses = []
-	reward_sum = []
+	reward_hist = []
 	test_score = []
-
 	env = gym.make('CartPole-v1')
 	agent = Policy_gradient(env)
-
-	states = np.empty(0).reshape(0,agent.dimen)
-	actions = np.empty(0).reshape(0,1)
-	rewards = np.empty(0).reshape(0,1)
-	discounted_rewards = np.empty(0).reshape(0,1)
-
-
 
 	while episode < episodes:
 		observation = agent.env.reset()
 		for step in range(500):
-		    state = np.reshape(observation, [1, agent.dimen])
-		    
-		    predict = agent.model_predict.predict([state])[0]
-		    action = np.random.choice(range(agent.num_actions),p=predict)
-		    
-		    states = np.vstack([states, state])
-		    actions = np.vstack([actions, action])
-		    
+
+		    action = agent.act(observation)
 		    observation, reward, done, _ = agent.env.step(action)
-		    rewards = np.vstack([rewards, reward])
+		    if done and step < 499:
+		        reward = -1e1
+		    agent.rewards = np.vstack([agent.rewards, reward])
 		    
 		    if done:
-		        reward_sum.append(step)
-		        discounted_rewards_episode = agent.discount_rewards(rewards, agent.gamma)       
-		        discounted_rewards = np.vstack([discounted_rewards, discounted_rewards_episode])
-		        
-		        rewards = np.empty(0).reshape(0,1)
+		        reward_hist.append(step)
+
+		        discounted_rewards_episode = agent.discount_rewards(agent.rewards)       
+		        agent.discounted_rewards = np.vstack([agent.discounted_rewards, discounted_rewards_episode])
+		        agent.rewards = np.empty(0).reshape(0,1)
 
 		        if (episode + 1) % batch_size == 0:
-		            discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
-		            discounted_rewards = discounted_rewards.squeeze()
-		            actions = actions.squeeze().astype(int)
-		           
-		            actions_train = np.zeros([len(actions), agent.num_actions])
-		            actions_train[np.arange(len(actions)), actions] = 1
-		            
-		            loss = agent.model_train.train_on_batch([states, discounted_rewards], actions_train)
-		            losses.append(loss)
+		        	loss = agent.train(agent.states, agent.actions, agent.discounted_rewards)
+		        	losses.append(loss)
 
-		            states = np.empty(0).reshape(0,agent.dimen)
-		            actions = np.empty(0).reshape(0,1)
-		            discounted_rewards = np.empty(0).reshape(0,1)
-
-
-		        score = agent.score_model(agent.model_predict,1)
+		        score = agent.test(agent.model_predict,1)
 		        test_score.append(score)
+		        
 		        every = 100
 		        if (episode + 1) % every == 0:
-		            print("Avg steps for episode {}/{}: {:0.2f} Test Score: {:0.2f} Loss: {:0.6f} ".format(
-		                (episode + 1), episodes, sum(reward_sum[-every:])/every, 
-		                test_score[-1], np.mean(losses[-every:])))
+		            print("Avg steps for episode {}/{}: {:0.2f} Test Score: {:0.2f}".format(
+		                (episode + 1), episodes, sum(reward_hist[-every:])/every, test_score[-1]))
         
 		        episode += 1
 		        break
+
 	plt.plot(test_score)
 	plt.show()
 
