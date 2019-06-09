@@ -1,7 +1,7 @@
 import gym
 import numpy as np
 import matplotlib.pyplot as plt
-from agent import Tabular_Q_learning, Policy_gradient, Actor_critics
+from agent import Tabular_Q_learning, Policy_gradient, Actor_critic
 from copy import deepcopy
 
 
@@ -50,7 +50,7 @@ def agent_Q():
 
 
 def agent_pg():
-	episodes = 1000
+	episodes = 3000
 	batch_size = 50
 	episode = 0
 	losses = []
@@ -66,7 +66,7 @@ def agent_pg():
 		    action = agent.act(observation)
 		    observation, reward, done, _ = agent.env.step(action)
 		    if done and step < 499:
-		        reward = -1e1
+		        reward = 1
 		    agent.rewards = np.vstack([agent.rewards, reward])
 		    
 		    if done:
@@ -80,11 +80,11 @@ def agent_pg():
 		        	loss = agent.train(agent.states, agent.actions, agent.discounted_rewards)
 		        	losses.append(loss)
 
-		        score = agent.test(agent.model_predict,1)
-		        test_score.append(score)
 		        
 		        every = 100
 		        if (episode + 1) % every == 0:
+		            score = agent.test(10)
+		            test_score.append(score)
 		            print("Avg steps for episode {}/{}: {:0.2f} Test Score: {:0.2f}".format(
 		                (episode + 1), episodes, sum(reward_hist[-every:])/every, test_score[-1]))
         

@@ -5,6 +5,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 import keras.backend as K
 from keras.initializers import glorot_uniform
+import keras.losses
 
 
 # Observation: 
@@ -62,13 +63,16 @@ class Tabular_Q_learning():
 
 
 class Policy_gradient():
+# ref
+# https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
+# https://medium.com/@ts1829/policy-gradient-reinforcement-learning-in-pytorch-df1383ea0baf
 	def __init__(self, env):
 		self.env = env
 		self.n_actions = env.action_space.n
-		self.n_hidden = 8
-		self.gamma = 0.95
+		self.n_hidden = 128
+		self.gamma = 0.99
 		self.dimen = len(env.reset())
-		self.lr = 1e-2
+		self.lr = 0.01
 		self.build_model()
 		self.states = np.empty(0).reshape(0,self.dimen)
 		self.actions = np.empty(0).reshape(0,1)
@@ -83,23 +87,26 @@ class Policy_gradient():
 	    h1 = layers.Dense(self.n_hidden, 
 	                     activation="relu", 
 	                     use_bias=False,
-	                     kernel_initializer=glorot_uniform(),
+	                     # kernel_initializer=glorot_uniform(seed=42),
+	                     kernel_initializer='ones',
 	                     name="hidden_1")(x)
+	    d1 = layers.Dropout(0.6, input_shape=(self.n_hidden,))(h1)
+
 	    out = layers.Dense(self.env.action_space.n, 
 	                       activation="softmax", 
-	                       kernel_initializer=glorot_uniform(),
+	                       # kernel_initializer=glorot_uniform(seed=42),
+	                       kernel_initializer='ones',
 	                       use_bias=False,
-	                       name="out")(h1)
+	                       name="out")(d1)
 
 	    def _loss(y_true, y_pred):
-	        log_lik = K.log(y_true * (y_true - y_pred) + (1 - y_true) * (y_true + y_pred))
+	        # log_lik = K.log(y_true * (y_true - y_pred + 1e-15) + (1 - y_true) * (y_true + y_pred + 1e-15))
+	        log_lik = -y_true * K.log(y_pred + 1e-15)
 	        return K.mean(log_lik * adv, keepdims=True)
 
 	    self.model_train = Model(inputs=[x, adv], outputs=out)
 	    self.model_train.compile(loss=_loss, optimizer=Adam(self.lr))
 	    self.model_predict = Model(inputs=[x], outputs=out)
-
-
 
 
 	def discount_rewards(self, rewards):
@@ -139,15 +146,16 @@ class Policy_gradient():
 	    return loss
 
 
-	def test(self, model, num_tests):
+	def test(self, num_tests):
 	    scores = []    
 	    for num_test in range(num_tests):
 	        observation = self.env.reset()
 	        reward_sum = 0
 	        while True:
 	            state = np.reshape(observation, [1, self.dimen])
-	            predict = model.predict([state])[0]
+	            predict = self.model_predict.predict([state])[0]
 	            action = np.argmax(predict)
+	            # action = np.random.choice(range(self.n_actions),p=predict)
 	            observation, reward, done, _ = self.env.step(action)
 	            reward_sum += reward
 	            if done:
@@ -157,7 +165,7 @@ class Policy_gradient():
 	    return np.mean(scores)
 
 
-class Actor_critics():
+class Actor_critic():
 	def __init__(self):
 		pass
 
