@@ -50,7 +50,7 @@ def agent_Q():
 
 
 def agent_pg():
-	episodes = 3000
+	episodes = 2000
 	batch_size = 50
 	episode = 0
 	losses = []
@@ -66,7 +66,7 @@ def agent_pg():
 		    action = agent.act(observation)
 		    observation, reward, done, _ = agent.env.step(action)
 		    if done and step < 499:
-		        reward = 1
+		        reward = -10 # 1600
 		    agent.rewards = np.vstack([agent.rewards, reward])
 		    
 		    if done:
