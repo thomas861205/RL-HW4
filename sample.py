@@ -6,7 +6,7 @@ from copy import deepcopy
 
 
 def agent_Q():
-	episodes = 1000
+	episodes = 2000
 	reward_hist = np.zeros((episodes))
 
 	env = gym.make('CartPole-v1')
@@ -32,20 +32,29 @@ def agent_Q():
 		    state = state_next
 
 		    if done:
-		    	reward_hist[episode] = step
+		    	reward_hist[episode] = step+1
 		    	env.close()
 		    	break
 
 		if episode % 1 == 0:
-			print('Episode: {}/{} | Score: {}'.format(episode, episodes, step))
+			# print('Episode: {}/{} | Score: {}'.format(episode, episodes, step+1))
+			pass
 
 
 	# print('avg. {}'.format(np.mean(reward_hist)))
 	# print('last 100 {}'.format(np.mean(reward_hist[-100:])))
 	# print('peak {}'.format(np.max(reward_hist)))
-
+	fig1 = plt.figure(1)
+	plt.clf()
 	plt.plot(reward_hist)
-	plt.show()
+	plt.xlabel('Epoch')
+	plt.ylabel('Score')
+	plt.title('Tabular Q Learning')
+	# plt.legend()
+	plt.savefig("Q_loss.png")
+	# plt.show()
+
+	return reward_hist
 
 
 
@@ -80,25 +89,30 @@ def agent_pg():
 		        	loss = agent.train(agent.states, agent.actions, agent.discounted_rewards)
 		        	losses.append(loss)
 		        
-		        if episode % 100 == 0:
-		            score = agent.test(10)
+		        if episode % 1 == 0:
+		            score = agent.test(1)
 		            test_score.append(score)
-		            print("Episode: {}/{} | Score: {:0.2f}".format(episode, episodes, test_score[-1]))
+		            # print("Episode: {}/{} | Score: {:0.2f}".format(episode, episodes, test_score[-1]))
         
 		        episode += 1
 		        break
 
+	fig2 = plt.figure(2)
+	plt.clf()
 	plt.plot(test_score)
-	plt.show()
+	plt.xlabel('Epoch')
+	plt.ylabel('Score')
+	plt.title('Policy Gradient')
+	# plt.legend()
+	plt.savefig("pg_loss.png")
+	return test_score
 
 
 def agent_ac():
-    episodes = 1000
+    episodes = 2000
     env = gym.make('CartPole-v1')
     agent = Actor_critic(env)
     reward_hist = []
-    actor_loss = []
-    critic_loss = []
 
     for episode in range(episodes):
         observation = agent.env.reset()
@@ -109,22 +123,55 @@ def agent_ac():
 
             observation_next, reward, done, _ = agent.env.step(action)
             state_next = observation_next.reshape(-1, 4)
-
+            if done and step < 499:
+                reward = -1e-5
             loss1, loss2 = agent.train(state, action, reward, state_next, done)
 
             observation = state_next[0]
 
             if done:
-                reward_hist.append(step)
+                reward_hist.append(step+1)
                 if episode % 50 == 0:
-                    test_score = agent.test(1)
-                    print('Episode: {}/{} | Score: {} Test Score: {}'.format(episode, episodes, step, test_score))
+                    print('Episode: {}/{} | Score: {}'.format(episode, episodes, step+1))
                 break
 
     plt.plot(reward_hist)
-    plt.show()
+    fig3 = plt.figure(3)
+    plt.clf()
+    plt.plot(reward_hist)
+    plt.xlabel('Epoch')
+    plt.ylabel('Score')
+    plt.title('Actor-critic')
+    # plt.legend()
+    plt.savefig("ac_loss.png")
+    return reward_hist
 
 if __name__ == '__main__':
-	# agent_Q()
-	# agent_pg()
-	agent_ac()
+	tests = 10
+	Q_scores = []
+	pg_scores = []
+	ac_score = []
+
+	for test in range(tests)
+		print('=========================<{}>==========================='.format(test))
+		Q_scores.append(agent_Q())
+
+	f = open('Q_scores.pickle', 'wb')
+	pickle.dump(Q_scores, f)
+	f.close()
+
+	for test in range(tests)
+		print('=========================<{}>==========================='.format(test))
+		pg_scores.append(agent_pg())
+
+	f = open('pg_scores.pickle', 'wb')
+	pickle.dump(pg_scores, f)
+	f.close()
+
+	for test in range(tests)
+		print('=========================<{}>==========================='.format(test))
+		ac_score.append(agent_ac())
+
+	f = open('ac_scores.pickle', 'wb')
+	pickle.dump(ac_scores, f)
+	f.close()

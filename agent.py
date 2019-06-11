@@ -168,17 +168,17 @@ class Actor_critic():
         self.env = env
         self.gamma = 0.99
         self.actor_lr = 0.001
-        self.critic_lr = 0.01
+        self.critic_lr = 0.001 #0.01
         self.build_actor()
         self.build_critic()
 
 
     def build_actor(self):
         inputs = layers.Input(shape=(4,))
-        h1 = layers.Dense(64, activation='relu', kernel_initializer='ones')(inputs)
-        # h2 = layers.Dense(16, activation='relu', kernel_initializer='ones')(h1)
-        d1 = layers.Dropout(0.6, input_shape=(64,))(h1)
-        out = layers.Dense(1, activation='sigmoid')(d1)
+        h1 = layers.Dense(32, activation='relu', kernel_initializer='ones')(inputs)
+        # h2 = layers.Dense(20, activation='relu', kernel_initializer='ones')(h1)
+        d1 = layers.Dropout(0.6, input_shape=(32,))(h1)
+        out = layers.Dense(1, activation='sigmoid', kernel_initializer='ones')(d1)
         self.actor = Model(inputs=inputs, outputs=out)
 
         def _actor_loss(y_true, y_pred):
@@ -193,8 +193,8 @@ class Actor_critic():
 
     def build_critic(self):
         inputs = layers.Input(shape=(4,))
-        h1 = layers.Dense(16, activation='relu', kernel_initializer='ones')(inputs)
-        h2 = layers.Dense(16, activation='relu', kernel_initializer='ones')(h1)
+        h1 = layers.Dense(16, activation='relu')(inputs)
+        h2 = layers.Dense(16, activation='relu')(h1)
         out = layers.Dense(1, activation='linear')(h2)
         self.critic = Model(inputs=inputs, outputs=out)
         self.critic.compile(loss='mse', optimizer=Adam(lr=self.critic_lr))
@@ -225,25 +225,6 @@ class Actor_critic():
         y = np.array([[action, td_error]])
         loss2 = self.actor.train_on_batch(state, y)
         return loss1, loss2
-
-    def test(self, num_tests):
-        scores = []
-        for num_test in range(num_tests):
-            observation = self.env.reset()
-            reward_sum = 0
-            while True:
-                state = observation.reshape(-1, 4)
-                prob = self.actor.predict(state)[0][0]
-                action = np.argmax(prob)
-                observation_next, reward, done, _ = self.env.step(action)
-                state_next = observation_next.reshape(-1, 4)
-                observation = state_next[0]
-                reward_sum += reward
-                if done:
-                    break
-            scores.append(reward_sum)
-        self.env.close()
-        return np.mean(scores)
 
 if __name__ == '__main__':
 	pass
