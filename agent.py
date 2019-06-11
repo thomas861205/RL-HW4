@@ -1,11 +1,12 @@
 import numpy as np
-from collections import defaultdict
+import keras.backend as K
+import keras.losses
 import keras.layers as layers
 from keras.models import Model
 from keras.optimizers import Adam
-import keras.backend as K
 from keras.initializers import glorot_uniform
-import keras.losses
+from collections import defaultdict
+import matplotlib.pyplot as plt
 
 
 # Observation: 
@@ -166,8 +167,108 @@ class Policy_gradient():
 
 
 class Actor_critic():
-	def __init__(self):
-		pass
+    def __init__(self, env):
+        self.env = env
+        self.gamma = 0.9
+        self.build_actor()
+        self.build_critic()
+
+
+    def build_actor(self):
+        inputs = layers.Input(shape=(4,))
+        x = layers.Dense(20, activation='relu')(inputs)
+        x = layers.Dense(20, activation='relu')(x)
+        x = layers.Dense(1, activation='sigmoid')(x)
+        self.actor = Model(inputs=inputs, outputs=x)
+
+        def _actor_loss(y_true, y_pred):
+            action_pred = y_pred
+            action_true, td_error = y_true[:, 0], y_true[:, 1]
+            action_true = K.reshape(action_true, (-1, 1))
+            loss = K.binary_crossentropy(action_true, action_pred)
+            return loss * K.flatten(td_error)
+
+        self.actor.compile(loss=_actor_loss, optimizer=Adam(lr=0.001))
+
+
+    def build_critic(self):
+        inputs = layers.Input(shape=(4,))
+        x = layers.Dense(20, activation='relu')(inputs)
+        x = layers.Dense(20, activation='relu')(x)
+        x = layers.Dense(1, activation='linear')(x)
+        self.critic = Model(inputs=inputs, outputs=x)
+        self.critic.compile(loss='mse', optimizer=Adam(lr=0.01))
+
+
+    def discount_reward(self, next_states, reward, done):
+        q = self.critic.predict(next_states)[0][0]
+        target = reward
+        if not done:
+            target = reward + self.gamma * q
+        
+        return target
+
+
+    def act(self, state):
+        prob = self.actor.predict(state)[0][0]
+        action = np.random.choice(np.array(range(2)), p=[1 - prob, prob])
+        return action
+
+
+    def train(self, state, action, reward, state_next, done):
+        target = self.discount_reward(state_next, reward, done)
+        y = np.array([target])
+
+        td_error = target - self.critic.predict(state)[0][0]
+        loss1 = self.critic.train_on_batch(state, y)
+
+        y = np.array([[action, td_error]])
+        loss2 = self.actor.train_on_batch(state, y)
+        return loss1, loss2
+
+
+    def run(self, episode):
+        history = {'episode': [], 'Episode_reward': [],
+                   'actor_loss': [], 'critic_loss': []}
+
+        for i in range(episode):
+            observation = self.env.reset()
+            rewards = []
+            alosses = []
+            closses = []
+
+            while True:
+                state = observation.reshape(-1, 4)
+                action = self.act(state)
+
+                observation_next, reward, done, _ = self.env.step(action)
+                state_next = observation_next.reshape(-1, 4)
+                rewards.append(reward)
+
+                loss1, loss2 = self.train(state, action, reward, state_next, done)
+
+                observation = state_next[0]
+
+                alosses.append(loss2)
+                closses.append(loss1)
+
+                if done:
+                    episode_reward = sum(rewards)
+                    aloss = np.mean(alosses)
+                    closs = np.mean(closses)
+
+                    history['episode'].append(i)
+                    history['Episode_reward'].append(episode_reward)
+                    history['actor_loss'].append(aloss)
+                    history['critic_loss'].append(closs)
+                    if i % 10 == 0:
+                        print('Episode: {} | Episode reward: {} | actor_loss: {:.3f} | critic_loss: {:.3f}'.format(i, episode_reward, aloss, closs))
+
+                    break
+        plt.plot(history['Episode_reward'])
+        plt.show()
+        return history
+
 
 if __name__ == '__main__':
 	pass

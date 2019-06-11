@@ -94,7 +94,51 @@ def agent_pg():
 	plt.plot(test_score)
 	plt.show()
 
+def agent_ac():
+    episodes = 100
+    env = gym.make('CartPole-v1')
+    agent = Actor_critic(env)
+    reward_hist = []
+    actor_loss = []
+    critic_loss = []
+
+    for episode in range(episodes):
+        observation = agent.env.reset()
+        rewards = []
+        alosses = []
+        closses = []
+
+        for step in range(500):
+            state = observation.reshape(-1, 4)
+            action = agent.act(state)
+
+            observation_next, reward, done, _ = agent.env.step(action)
+            state_next = observation_next.reshape(-1, 4)
+            rewards.append(reward)
+
+            loss1, loss2 = agent.train(state, action, reward, state_next, done)
+
+            observation = state_next[0]
+
+            alosses.append(loss2)
+            closses.append(loss1)
+
+            if done:
+                episode_reward = sum(rewards)
+                aloss = np.mean(alosses)
+                closs = np.mean(closses)
+
+                reward_hist.append(episode_reward)
+                actor_loss.append(aloss)
+                critic_loss.append(closs)
+                if episode % 10 == 0:
+                    print('Episode: {} | Episode reward: {} | actor_loss: {:.3f} | critic_loss: {:.3f}'.format(episode, episode_reward, aloss, closs))
+
+                break
+    plt.plot(reward_hist)
+    plt.show()
 
 if __name__ == '__main__':
 	# agent_Q()
-	agent_pg()
+	# agent_pg()
+	agent_ac()
