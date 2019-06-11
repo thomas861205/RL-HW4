@@ -79,7 +79,6 @@ class Policy_gradient():
 		self.actions = np.empty(0).reshape(0,1)
 		self.rewards = np.empty(0).reshape(0,1)
 		self.discounted_rewards = np.empty(0).reshape(0,1)
-		# print(self.model_predict.summary())
 
 
 	def build_model(self):
@@ -89,19 +88,17 @@ class Policy_gradient():
 	                     activation="relu", 
 	                     use_bias=False,
 	                     # kernel_initializer=glorot_uniform(seed=42),
-	                     kernel_initializer='ones',
-	                     name="hidden_1")(x)
+	                     kernel_initializer='ones')(x)
+
 	    d1 = layers.Dropout(0.6, input_shape=(self.n_hidden,))(h1)
 
 	    out = layers.Dense(self.env.action_space.n, 
 	                       activation="softmax", 
 	                       # kernel_initializer=glorot_uniform(seed=42),
 	                       kernel_initializer='ones',
-	                       use_bias=False,
-	                       name="out")(d1)
+	                       use_bias=False)(d1)
 
 	    def _loss(y_true, y_pred):
-	        # log_lik = K.log(y_true * (y_true - y_pred + 1e-15) + (1 - y_true) * (y_true + y_pred + 1e-15))
 	        log_lik = -y_true * K.log(y_pred + 1e-15)
 	        return K.mean(log_lik * adv, keepdims=True)
 
@@ -169,17 +166,20 @@ class Policy_gradient():
 class Actor_critic():
     def __init__(self, env):
         self.env = env
-        self.gamma = 0.9
+        self.gamma = 0.99
+        self.actor_lr = 0.001
+        self.critic_lr = 0.01
         self.build_actor()
         self.build_critic()
 
 
     def build_actor(self):
         inputs = layers.Input(shape=(4,))
-        x = layers.Dense(20, activation='relu')(inputs)
-        x = layers.Dense(20, activation='relu')(x)
-        x = layers.Dense(1, activation='sigmoid')(x)
-        self.actor = Model(inputs=inputs, outputs=x)
+        h1 = layers.Dense(64, activation='relu', kernel_initializer='ones')(inputs)
+        # h2 = layers.Dense(16, activation='relu', kernel_initializer='ones')(h1)
+        d1 = layers.Dropout(0.6, input_shape=(64,))(h1)
+        out = layers.Dense(1, activation='sigmoid')(d1)
+        self.actor = Model(inputs=inputs, outputs=out)
 
         def _actor_loss(y_true, y_pred):
             action_pred = y_pred
@@ -188,16 +188,16 @@ class Actor_critic():
             loss = K.binary_crossentropy(action_true, action_pred)
             return loss * K.flatten(td_error)
 
-        self.actor.compile(loss=_actor_loss, optimizer=Adam(lr=0.001))
+        self.actor.compile(loss=_actor_loss, optimizer=Adam(lr=self.actor_lr))
 
 
     def build_critic(self):
         inputs = layers.Input(shape=(4,))
-        x = layers.Dense(20, activation='relu')(inputs)
-        x = layers.Dense(20, activation='relu')(x)
-        x = layers.Dense(1, activation='linear')(x)
-        self.critic = Model(inputs=inputs, outputs=x)
-        self.critic.compile(loss='mse', optimizer=Adam(lr=0.01))
+        h1 = layers.Dense(16, activation='relu', kernel_initializer='ones')(inputs)
+        h2 = layers.Dense(16, activation='relu', kernel_initializer='ones')(h1)
+        out = layers.Dense(1, activation='linear')(h2)
+        self.critic = Model(inputs=inputs, outputs=out)
+        self.critic.compile(loss='mse', optimizer=Adam(lr=self.critic_lr))
 
 
     def discount_reward(self, next_states, reward, done):
@@ -226,49 +226,24 @@ class Actor_critic():
         loss2 = self.actor.train_on_batch(state, y)
         return loss1, loss2
 
-
-    def run(self, episode):
-        history = {'episode': [], 'Episode_reward': [],
-                   'actor_loss': [], 'critic_loss': []}
-
-        for i in range(episode):
+    def test(self, num_tests):
+        scores = []
+        for num_test in range(num_tests):
             observation = self.env.reset()
-            rewards = []
-            alosses = []
-            closses = []
-
+            reward_sum = 0
             while True:
                 state = observation.reshape(-1, 4)
-                action = self.act(state)
-
+                prob = self.actor.predict(state)[0][0]
+                action = np.argmax(prob)
                 observation_next, reward, done, _ = self.env.step(action)
                 state_next = observation_next.reshape(-1, 4)
-                rewards.append(reward)
-
-                loss1, loss2 = self.train(state, action, reward, state_next, done)
-
                 observation = state_next[0]
-
-                alosses.append(loss2)
-                closses.append(loss1)
-
+                reward_sum += reward
                 if done:
-                    episode_reward = sum(rewards)
-                    aloss = np.mean(alosses)
-                    closs = np.mean(closses)
-
-                    history['episode'].append(i)
-                    history['Episode_reward'].append(episode_reward)
-                    history['actor_loss'].append(aloss)
-                    history['critic_loss'].append(closs)
-                    if i % 10 == 0:
-                        print('Episode: {} | Episode reward: {} | actor_loss: {:.3f} | critic_loss: {:.3f}'.format(i, episode_reward, aloss, closs))
-
                     break
-        plt.plot(history['Episode_reward'])
-        plt.show()
-        return history
-
+            scores.append(reward_sum)
+        self.env.close()
+        return np.mean(scores)
 
 if __name__ == '__main__':
 	pass

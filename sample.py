@@ -37,12 +37,12 @@ def agent_Q():
 		    	break
 
 		if episode % 1 == 0:
-			print('Episode {}/{} Score: {} Epsilon:{:.5f}'.format(episode, episodes, step, agent.epsilon))
+			print('Episode: {}/{} | Score: {}'.format(episode, episodes, step))
 
 
-	print('avg. {}'.format(np.mean(reward_hist)))
-	print('last 100 {}'.format(np.mean(reward_hist[-100:])))
-	print('peak {}'.format(np.max(reward_hist)))
+	# print('avg. {}'.format(np.mean(reward_hist)))
+	# print('last 100 {}'.format(np.mean(reward_hist[-100:])))
+	# print('peak {}'.format(np.max(reward_hist)))
 
 	plt.plot(reward_hist)
 	plt.show()
@@ -79,14 +79,11 @@ def agent_pg():
 		        if (episode + 1) % batch_size == 0:
 		        	loss = agent.train(agent.states, agent.actions, agent.discounted_rewards)
 		        	losses.append(loss)
-
 		        
-		        every = 100
-		        if (episode + 1) % every == 0:
+		        if episode % 100 == 0:
 		            score = agent.test(10)
 		            test_score.append(score)
-		            print("Avg steps for episode {}/{}: {:0.2f} Test Score: {:0.2f}".format(
-		                (episode + 1), episodes, sum(reward_hist[-every:])/every, test_score[-1]))
+		            print("Episode: {}/{} | Score: {:0.2f}".format(episode, episodes, test_score[-1]))
         
 		        episode += 1
 		        break
@@ -94,8 +91,9 @@ def agent_pg():
 	plt.plot(test_score)
 	plt.show()
 
+
 def agent_ac():
-    episodes = 100
+    episodes = 1000
     env = gym.make('CartPole-v1')
     agent = Actor_critic(env)
     reward_hist = []
@@ -104,9 +102,6 @@ def agent_ac():
 
     for episode in range(episodes):
         observation = agent.env.reset()
-        rewards = []
-        alosses = []
-        closses = []
 
         for step in range(500):
             state = observation.reshape(-1, 4)
@@ -114,27 +109,18 @@ def agent_ac():
 
             observation_next, reward, done, _ = agent.env.step(action)
             state_next = observation_next.reshape(-1, 4)
-            rewards.append(reward)
 
             loss1, loss2 = agent.train(state, action, reward, state_next, done)
 
             observation = state_next[0]
 
-            alosses.append(loss2)
-            closses.append(loss1)
-
             if done:
-                episode_reward = sum(rewards)
-                aloss = np.mean(alosses)
-                closs = np.mean(closses)
-
-                reward_hist.append(episode_reward)
-                actor_loss.append(aloss)
-                critic_loss.append(closs)
-                if episode % 10 == 0:
-                    print('Episode: {} | Episode reward: {} | actor_loss: {:.3f} | critic_loss: {:.3f}'.format(episode, episode_reward, aloss, closs))
-
+                reward_hist.append(step)
+                if episode % 50 == 0:
+                    test_score = agent.test(1)
+                    print('Episode: {}/{} | Score: {} Test Score: {}'.format(episode, episodes, step, test_score))
                 break
+
     plt.plot(reward_hist)
     plt.show()
 
