@@ -64,9 +64,7 @@ class Tabular_Q_learning():
 
 
 class Policy_gradient():
-# ref
-# https://github.com/breeko/Simple-Reinforcement-Learning-with-Tensorflow/blob/master/Part%202%20-%20Policy-based%20Agents%20with%20Keras.ipynb
-# https://medium.com/@ts1829/policy-gradient-reinforcement-learning-in-pytorch-df1383ea0baf
+
 	def __init__(self, env):
 		self.env = env
 		self.n_actions = env.action_space.n
@@ -86,18 +84,18 @@ class Policy_gradient():
 	    adv = layers.Input(shape=[1], name="advantages")
 	    h1 = layers.Dense(self.n_hidden, 
 	                     activation="relu", 
+	                     # kernel_initializer=glorot_uniform(),
+	                     kernel_initializer='ones',
 	                     use_bias=False,
-	                     # kernel_initializer=glorot_uniform(seed=42),
-	                     kernel_initializer='ones'
 	                     )(x)
 
-	    d1 = layers.Dropout(0.6, input_shape=(self.n_hidden,))(h1)
+	    # d1 = layers.Dropout(0.6, input_shape=(self.n_hidden,))(h1)
 
 	    out = layers.Dense(self.env.action_space.n, 
 	                       activation="softmax", 
-	                       # kernel_initializer=glorot_uniform(seed=42),
+	                       # kernel_initializer=glorot_uniform(),
 	                       kernel_initializer='ones',
-	                       use_bias=False)(d1)
+	                       use_bias=False)(h1)
 
 	    def _loss(y_true, y_pred):
 	        log_lik = -y_true * K.log(y_pred + 1e-15)
@@ -130,7 +128,7 @@ class Policy_gradient():
 
 
 	def train(self, states, actions, discounted_rewards):
-	    # discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
+	    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
 	    discounted_rewards = discounted_rewards.squeeze()
 	    actions = actions.squeeze().astype(int)
 	   

@@ -55,7 +55,7 @@ def agent_Q():
 	plt.ylabel('Score')
 	plt.title('Tabular Q Learning')
 	# plt.legend()
-	plt.savefig("Q_loss.png")
+	# plt.savefig("Q_loss.png")
 	# plt.show()
 
 	return reward_hist
@@ -64,7 +64,8 @@ def agent_Q():
 
 def agent_pg():
 	episodes = 2000
-	batch_size = 50
+	# batch_size = 50
+	batch_size = 1
 	episode = 0
 	losses = []
 	reward_hist = []
@@ -109,7 +110,7 @@ def agent_pg():
 	plt.ylabel('Score')
 	plt.title('Policy Gradient')
 	# plt.legend()
-	plt.savefig("pg_loss.png")
+	# plt.savefig("pg_loss.png")
 	return test_score
 
 
@@ -148,38 +149,38 @@ def agent_ac():
     plt.ylabel('Score')
     plt.title('Actor-critic')
     # plt.legend()
-    plt.savefig("ac_loss.png")
+    # plt.savefig("ac_loss.png")
     return reward_hist
 
 if __name__ == '__main__':
-	tests = 5
+	tests = 1
 	Q_scores = np.zeros((2000, 1))
 	pg_scores = np.zeros((2000, 1))
 	ac_scores = np.zeros((2000, 1))
 
-	# for test in range(tests):
+	for test in range(tests):
 	# 	print('=========================<{}>==========================='.format(test))
-	# 	Q_scores += np.array(agent_Q()).reshape((2000, 1))
+		Q_scores += np.array(agent_Q()).reshape((2000, 1))
 
 	# Q_scores /= tests
 	# f = open('Q_scores_high.pickle', 'wb')
 	# pickle.dump(Q_scores, f)
 	# f.close()
 
-	tests = 5
+	tests = 1
 	for test in range(tests):
-		print('=========================<{}>==========================='.format(test))
+	# 	print('=========================<{}>==========================='.format(test))
 		pg_scores += np.array(agent_pg()).reshape((2000, 1))
 
-	pg_scores /= tests
-	f = open('pg_scores_no_stdize.pickle', 'wb')
-	pickle.dump(pg_scores, f)
-	f.close()
+	# pg_scores /= tests
+	# f = open('pg_scores_batch_1.pickle', 'wb')
+	# pickle.dump(pg_scores, f)
+	# f.close()
 
-	# tests = 5
+	tests = 1
 	# for test in range(tests):
 	# 	print('=========================<{}>==========================='.format(test))
-	# 	ac_scores += np.array(agent_ac()).reshape((2000, 1))
+		ac_scores += np.array(agent_ac()).reshape((2000, 1))
 
 	# ac_scores /= tests
 	# f = open('ac_scores.pickle', 'wb')
