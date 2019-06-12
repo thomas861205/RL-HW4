@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from agent import Tabular_Q_learning, Policy_gradient, Actor_critic
 from copy import deepcopy
+import pickle
 
 
 def agent_Q():
@@ -27,7 +28,10 @@ def agent_Q():
 		    action = agent.act(state)
 		    state_next, reward, done, info = env.step(action) # take a random action
 		    if done and step < 499:
-		    	reward = -1e5
+		    	# reward = -1e5
+		    	# reward = 1
+		    	# reward = -1e2
+		    	reward = -1e6
 		    agent.update_Q(state, action, reward, state_next, done)
 		    state = state_next
 
@@ -90,6 +94,7 @@ def agent_pg():
 		        	losses.append(loss)
 		        
 		        if episode % 1 == 0:
+		            print(episode)
 		            score = agent.test(1)
 		            test_score.append(score)
 		            # print("Episode: {}/{} | Score: {:0.2f}".format(episode, episodes, test_score[-1]))
@@ -147,31 +152,36 @@ def agent_ac():
     return reward_hist
 
 if __name__ == '__main__':
-	tests = 10
-	Q_scores = []
-	pg_scores = []
-	ac_score = []
+	tests = 5
+	Q_scores = np.zeros((2000, 1))
+	pg_scores = np.zeros((2000, 1))
+	ac_scores = np.zeros((2000, 1))
 
-	for test in range(tests)
+	# for test in range(tests):
+	# 	print('=========================<{}>==========================='.format(test))
+	# 	Q_scores += np.array(agent_Q()).reshape((2000, 1))
+
+	# Q_scores /= tests
+	# f = open('Q_scores_high.pickle', 'wb')
+	# pickle.dump(Q_scores, f)
+	# f.close()
+
+	tests = 5
+	for test in range(tests):
 		print('=========================<{}>==========================='.format(test))
-		Q_scores.append(agent_Q())
+		pg_scores += np.array(agent_pg()).reshape((2000, 1))
 
-	f = open('Q_scores.pickle', 'wb')
-	pickle.dump(Q_scores, f)
-	f.close()
-
-	for test in range(tests)
-		print('=========================<{}>==========================='.format(test))
-		pg_scores.append(agent_pg())
-
-	f = open('pg_scores.pickle', 'wb')
+	pg_scores /= tests
+	f = open('pg_scores_no_stdize.pickle', 'wb')
 	pickle.dump(pg_scores, f)
 	f.close()
 
-	for test in range(tests)
-		print('=========================<{}>==========================='.format(test))
-		ac_score.append(agent_ac())
+	# tests = 5
+	# for test in range(tests):
+	# 	print('=========================<{}>==========================='.format(test))
+	# 	ac_scores += np.array(agent_ac()).reshape((2000, 1))
 
-	f = open('ac_scores.pickle', 'wb')
-	pickle.dump(ac_scores, f)
-	f.close()
+	# ac_scores /= tests
+	# f = open('ac_scores.pickle', 'wb')
+	# pickle.dump(ac_scores, f)
+	# f.close()

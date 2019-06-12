@@ -88,7 +88,8 @@ class Policy_gradient():
 	                     activation="relu", 
 	                     use_bias=False,
 	                     # kernel_initializer=glorot_uniform(seed=42),
-	                     kernel_initializer='ones')(x)
+	                     kernel_initializer='ones'
+	                     )(x)
 
 	    d1 = layers.Dropout(0.6, input_shape=(self.n_hidden,))(h1)
 
@@ -129,7 +130,7 @@ class Policy_gradient():
 
 
 	def train(self, states, actions, discounted_rewards):
-	    discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
+	    # discounted_rewards = (discounted_rewards - discounted_rewards.mean()) / discounted_rewards.std()
 	    discounted_rewards = discounted_rewards.squeeze()
 	    actions = actions.squeeze().astype(int)
 	   
